@@ -4,6 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.takypok.report.model.debezium.CDCHandler;
+import com.takypok.report.model.debezium.handler.GroupTeamCdcHandler;
+import com.takypok.report.model.debezium.handler.PriorityCdcHandler;
+import com.takypok.report.model.debezium.handler.SlaConfigurationCdcHandler;
 import com.takypok.report.model.debezium.handler.TicketCdcHandler;
 import com.takypok.report.model.debezium.source.TicketMySql;
 import io.debezium.engine.ChangeEvent;
@@ -33,6 +36,9 @@ import org.springframework.messaging.MessageChannel;
 public class DebeziumMysqlConfig {
   private final ObjectMapper mapper;
   private final TicketCdcHandler ticketHandler;
+  private final GroupTeamCdcHandler groupTeamHandler;
+  private final PriorityCdcHandler priorityHandler;
+  private final SlaConfigurationCdcHandler slaConfigurationHandler;
 
   private Map<String, CDCHandler<?, ?, ?>> handlerMap;
 
@@ -68,7 +74,10 @@ public class DebeziumMysqlConfig {
   @PostConstruct
   private void init() {
     this.handlerMap = Map.of(
-            prefix + ".ticketingdb_management.tickets",  ticketHandler
+//            prefix + ".ticketingdb_management.tickets",       ticketHandler,
+            prefix + ".ticketingdb_management.group_team",      groupTeamHandler,
+            prefix + ".ticketingdb_management.priority",        priorityHandler,
+            prefix + ".ticketingdb_management.sla_configuration", slaConfigurationHandler
     );
   }
 
@@ -91,7 +100,7 @@ public class DebeziumMysqlConfig {
     props.setProperty("database.server.id",             serverId);
     props.setProperty("database.include.list",          dbname);
     props.setProperty("table.include.list",
-            "ticketingdb_management.tickets, ticketingdb_management.application");
+            "ticketingdb_management.group_team,ticketingdb_management.priority,ticketingdb_management.sla_configuration,ticketingdb_management.tickets");
     props.setProperty("snapshot.mode",                  "initial");
     props.setProperty("heartbeat.interval.ms",          "30000");
     props.setProperty("schema.history.internal",
@@ -135,12 +144,10 @@ public class DebeziumMysqlConfig {
       JsonNode before  = payload.path("before");
       JsonNode after   = payload.path("after");
 
-      // Debezium runs on its own non-Reactor thread → .subscribe() is safe here
       handler.handle(op, before, after)
-              .doOnError(e -> log.error(
+              .subscribe(null, e -> log.error(
                       "[CDC] Failed to process op={} destination={}: ",
-                      op, destination, e))
-              .subscribe();
+                      op, destination, e));
 
     } catch (Exception e) {
       log.error("[CDC] Failed to parse message for destination={}: ", destination, e);

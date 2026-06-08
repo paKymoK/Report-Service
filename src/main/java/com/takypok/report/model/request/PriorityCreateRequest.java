@@ -10,6 +10,6 @@ import lombok.*;
 @ToString
 public class PriorityCreateRequest {
   @NotNull private String name;
-  @NotNull private Long responseTime;
-  @NotNull private Long resolutionTime;
+  @NotNull private Double responseTime;
+  @NotNull private Double resolutionTime;
 }

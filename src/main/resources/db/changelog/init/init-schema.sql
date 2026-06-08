@@ -18,8 +18,8 @@ CREATE TABLE IF NOT EXISTS priority
 (
     id              bigserial         NOT NULL,
     name            character varying NOT NULL,
-    response_time   integer           NOT NULL,
-    resolution_time integer           NOT NULL,
+    response_time   numeric(5,2)      NOT NULL,
+    resolution_time numeric(5,2)      NOT NULL,
     created_at      timestamp with time zone,
     created_by      character varying,
     modified_at     timestamp with time zone,
@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS project
     modified_at timestamp with time zone,
     modified_by character varying,
     PRIMARY KEY (id),
-    UNIQUE (code)
+    UNIQUE (name, code)
 );
 
 CREATE TABLE IF NOT EXISTS issue_type
