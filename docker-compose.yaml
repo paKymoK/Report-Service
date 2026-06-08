@@ -1,0 +1,24 @@
+services:
+  mysql57:
+    image: mysql:5.7
+    platform: linux/amd64
+    container_name: mysql57
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ticketingdb_management
+      MYSQL_USER: dev
+      MYSQL_PASSWORD: 123456
+    ports:
+      - "3307:3306"
+    command:
+      - --server-id=1
+      - --log-bin=mysql-bin
+      - --binlog-format=ROW
+      - --binlog-row-image=FULL
+      - --expire_logs_days=10
+    volumes:
+      - mysql57_data:/var/lib/mysql
+
+volumes:
+  mysql57_data:

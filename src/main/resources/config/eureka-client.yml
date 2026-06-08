@@ -1,0 +1,9 @@
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+#    service-url:
+#      defaultZone: ${EUREKA_URI:http://127.0.0.1:8761/eureka}
+#  instance:
+#    prefer-ip-address: true

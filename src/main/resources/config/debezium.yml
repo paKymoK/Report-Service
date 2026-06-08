@@ -1,0 +1,24 @@
+debezium:
+  hostname: ${DB_HOST:127.0.0.1}
+  port: ${DB_PORT:5433}
+  dbname: ${DB_SCHEMA:workflow}
+  user: ${DB_USER:postgres}
+  password: ${DB_PASSWORD:postgres}
+  prefix: ${PREFIX:topix}
+  offset:
+    storage:
+      path: ${DEBEZIUM_OFFSET_PATH:./offset-postgres.dat}
+  mysql:
+    hostname: ${MYSQL_HOST:127.0.0.1}
+    port: ${MYSQL_PORT:3307}
+    dbname: ${MYSQL_SCHEMA:ticketingdb_management}
+    user: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:root}
+    server-id: ${MYSQL_SERVER_ID:2}
+    prefix: ${MYSQL_PREFIX:mysql}
+    offset:
+      storage:
+        path: ${MYSQL_DEBEZIUM_OFFSET_PATH:./offset-mysql.dat}
+    schema:
+      history:
+        path: ${MYSQL_SCHEMA_HISTORY_PATH:./schema-history-mysql.dat}

@@ -1,0 +1,19 @@
+databaseChangeLog:
+  - include:
+      file: db/changelog/init/init-schema.sql
+  - include:
+      file: db/changelog/init/init-function.sql
+  - include:
+      file: db/changelog/init/init-cron.sql
+
+  - changeSet:
+      id: create-idx-sla-pending-overdue
+      author: you
+      runInTransaction: false
+      changes:
+        - sql:
+            sql: >
+              CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_sla_pending_overdue_check
+              ON sla (ticket_id)
+              WHERE (status ->> 'isResponseOverdue') IS DISTINCT FROM 'true'
+                 OR (status ->> 'isResolutionOverdue') IS DISTINCT FROM 'true';
