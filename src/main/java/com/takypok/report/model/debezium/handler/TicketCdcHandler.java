@@ -11,6 +11,8 @@ import com.takypok.report.model.exception.ApplicationException;
 import com.takypok.report.repository.TicketRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
@@ -22,6 +24,7 @@ public class TicketCdcHandler implements CDCHandler<TicketMySql, Ticket<TicketDe
 
     private final TicketRepository<TicketDetail> repository;
     private final ObjectMapper snakeCaseMapper;
+    private final R2dbcEntityTemplate template;
 
     @Override
     public TicketMySql deserialize(JsonNode node) {
@@ -37,12 +40,12 @@ public class TicketCdcHandler implements CDCHandler<TicketMySql, Ticket<TicketDe
     public Ticket<TicketDetail> convert(TicketMySql mysqlModel) {
         if (mysqlModel == null) return null;
 
-        Ticket<TicketDetail> pg = new Ticket<>();
+        Ticket<TicketDetail> ticket = new Ticket<>();
 
-        pg.setId(mysqlModel.getId());
-        pg.setSummary(mysqlModel.getSummary());
+        ticket.setId(mysqlModel.getId());
+        ticket.setSummary(mysqlModel.getSummary());
 
-        return pg;
+        return ticket;
     }
 
 
@@ -57,7 +60,8 @@ public class TicketCdcHandler implements CDCHandler<TicketMySql, Ticket<TicketDe
     }
 
     @Override
-    public Mono<Void> handle(String op, JsonNode before, JsonNode after) {
-        return CDCHandler.super.handle(op, before, after);
+    public Mono<Ticket<TicketDetail>> upsert(Ticket<TicketDetail> entity) {
+        return template.insert(entity)
+                .onErrorResume(DuplicateKeyException.class, e -> template.update(entity));
     }
 }

@@ -3,11 +3,14 @@ package com.takypok.report.config;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.takypok.report.model.debezium.CDCHandler;
+import com.takypok.report.model.debezium.handler.TicketCdcHandler;
 import com.takypok.report.model.debezium.source.TicketMySql;
 import io.debezium.engine.ChangeEvent;
 import io.debezium.engine.DebeziumEngine;
 import io.debezium.engine.format.JsonByteArray;
 
+import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 
@@ -24,19 +27,14 @@ import org.springframework.integration.debezium.support.DebeziumHeaders;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 
+@Slf4j
 @Configuration
 @RequiredArgsConstructor
-@Slf4j
 public class DebeziumMysqlConfig {
-
   private final ObjectMapper mapper;
-  private ObjectMapper snakeCaseMapper;
+  private final TicketCdcHandler ticketHandler;
 
-  @PostConstruct
-  private void init() {
-    this.snakeCaseMapper = mapper.copy()
-            .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
-  }
+  private Map<String, CDCHandler<?, ?, ?>> handlerMap;
 
   @Value("${debezium.mysql.hostname}")
   private String hostname;
@@ -65,32 +63,45 @@ public class DebeziumMysqlConfig {
   @Value("${debezium.mysql.schema.history.path:./schema-history-mysql.dat}")
   private String schemaHistoryPath;
 
+  // ── Initialization ────────────────────────────────────────────────────────
+
+  @PostConstruct
+  private void init() {
+    this.handlerMap = Map.of(
+            prefix + ".ticketingdb_management.tickets",  ticketHandler
+    );
+  }
+
+  // ── Debezium Engine ───────────────────────────────────────────────────────
+
   @Bean
   public DebeziumEngine.Builder<ChangeEvent<byte[], byte[]>> debeziumMysqlEngineBuilder() {
     Properties props = new Properties();
-    props.setProperty("name", "debezium-mysql");
-    props.setProperty("connector.class", "io.debezium.connector.mysql.MySqlConnector");
-    props.setProperty("tasks.max", "1");
-    props.setProperty("offset.storage", "org.apache.kafka.connect.storage.FileOffsetBackingStore");
-    props.setProperty("offset.storage.file.filename", offsetStoragePath);
-    props.setProperty("offset.flush.interval.ms", "60000");
-
-    props.setProperty("topic.prefix", prefix);
-    props.setProperty("database.hostname", hostname);
-    props.setProperty("database.port", port);
-    props.setProperty("database.user", user);
-    props.setProperty("database.password", password);
-    props.setProperty("database.server.id", serverId);
-    props.setProperty("database.include.list", dbname);
-    props.setProperty("table.include.list", "ticketingdb_management.tickets, ticketingdb_management.priority");
-    props.setProperty("snapshot.mode", "initial");
-    props.setProperty("heartbeat.interval.ms", "30000");
-
-    props.setProperty("schema.history.internal", "io.debezium.storage.file.history.FileSchemaHistory");
+    props.setProperty("name",                           "debezium-mysql");
+    props.setProperty("connector.class",                "io.debezium.connector.mysql.MySqlConnector");
+    props.setProperty("tasks.max",                      "1");
+    props.setProperty("offset.storage",                 "org.apache.kafka.connect.storage.FileOffsetBackingStore");
+    props.setProperty("offset.storage.file.filename",   offsetStoragePath);
+    props.setProperty("offset.flush.interval.ms",       "60000");
+    props.setProperty("topic.prefix",                   prefix);
+    props.setProperty("database.hostname",              hostname);
+    props.setProperty("database.port",                  port);
+    props.setProperty("database.user",                  user);
+    props.setProperty("database.password",              password);
+    props.setProperty("database.server.id",             serverId);
+    props.setProperty("database.include.list",          dbname);
+    props.setProperty("table.include.list",
+            "ticketingdb_management.tickets, ticketingdb_management.application");
+    props.setProperty("snapshot.mode",                  "initial");
+    props.setProperty("heartbeat.interval.ms",          "30000");
+    props.setProperty("schema.history.internal",
+            "io.debezium.storage.file.history.FileSchemaHistory");
     props.setProperty("schema.history.internal.file.filename", schemaHistoryPath);
 
     return DebeziumEngine.create(JsonByteArray.class).using(props);
   }
+
+  // ── Spring Integration ────────────────────────────────────────────────────
 
   @Bean
   public MessageChannel debeziumMysqlInputChannel() {
@@ -99,50 +110,40 @@ public class DebeziumMysqlConfig {
 
   @Bean
   public DebeziumMessageProducer debeziumMysqlMessageProducer() {
-    DebeziumMessageProducer producer = new DebeziumMessageProducer(debeziumMysqlEngineBuilder());
+    DebeziumMessageProducer producer =
+            new DebeziumMessageProducer(debeziumMysqlEngineBuilder());
     producer.setOutputChannel(debeziumMysqlInputChannel());
     producer.setPhase(Integer.MAX_VALUE);
     return producer;
   }
 
+  // ── Event Router ──────────────────────────────────────────────────────────
+
   @ServiceActivator(inputChannel = "debeziumMysqlInputChannel")
   public void mysqlHandler(Message<byte[]> message) {
-    Object destination = message.getHeaders().get(DebeziumHeaders.DESTINATION);
-    if ((prefix + ".ticketingdb_management.tickets").equals(destination)) {
-      try {
-        JsonNode payload = mapper.readTree(message.getPayload()).path("payload");
-        TicketMySql before =
-                convertToSlaStatus(
-                        payload.path("before"));
-        TicketMySql after =
-                convertToSlaStatus(
-                        payload.path("after"));
-      } catch (Exception e) {
-        log.error("MySQL CDC parse error: ", e);
-      }
+    String destination = (String) message.getHeaders().get(DebeziumHeaders.DESTINATION);
+
+    CDCHandler<?, ?, ?> handler = handlerMap.get(destination);
+    if (handler == null) {
+      log.debug("[CDC] No handler registered for destination: {}", destination);
+      return;
     }
 
-    if ((prefix + ".ticketingdb_management.priority").equals(destination)) {
-      try {
-        JsonNode payload = mapper.readTree(message.getPayload()).path("payload");
-
-        System.out.println("MySQL priority Before: " + payload.path("before"));
-        System.out.println("MySQL priority After: " + payload.path("after"));
-      } catch (Exception e) {
-        log.error("MySQL CDC parse error: ", e);
-      }
-    }
-  }
-
-  private TicketMySql convertToSlaStatus(JsonNode payload) {
-    if (Objects.isNull(payload)) {
-      return null;
-    }
     try {
-      return snakeCaseMapper.treeToValue(payload, TicketMySql.class);
+      JsonNode payload = mapper.readTree(message.getPayload()).path("payload");
+      String   op      = payload.path("op").asText();
+      JsonNode before  = payload.path("before");
+      JsonNode after   = payload.path("after");
+
+      // Debezium runs on its own non-Reactor thread → .subscribe() is safe here
+      handler.handle(op, before, after)
+              .doOnError(e -> log.error(
+                      "[CDC] Failed to process op={} destination={}: ",
+                      op, destination, e))
+              .subscribe();
+
     } catch (Exception e) {
-      log.error("Failed to deserialize SlaStatus from payload: {}", payload, e);
-      return null;
+      log.error("[CDC] Failed to parse message for destination={}: ", destination, e);
     }
   }
 }
