@@ -12,35 +12,6 @@ CREATE TABLE IF NOT EXISTS priority
     UNIQUE (name)
 );
 
-CREATE TABLE IF NOT EXISTS project
-(
-    id          bigserial         NOT NULL,
-    name        character varying NOT NULL,
-    code        character varying NOT NULL,
-    workflow_id bigint            NOT NULL,
-    created_at  timestamp with time zone,
-    created_by  character varying,
-    modified_at timestamp with time zone,
-    modified_by character varying,
-    PRIMARY KEY (id),
-    UNIQUE (code)
-);
-
-CREATE TABLE IF NOT EXISTS issue_type
-(
-    id          bigserial         NOT NULL,
-    name        character varying NOT NULL,
-    code        character varying NOT NULL,
-    project_id  integer           NOT NULL,
-    created_at  timestamp with time zone,
-    created_by  character varying,
-    modified_at timestamp with time zone,
-    modified_by character varying,
-    PRIMARY KEY (id),
-    UNIQUE (name, project_id),
-    UNIQUE (code, project_id)
-);
-
 CREATE TABLE IF NOT EXISTS sla
 (
     id              bigserial NOT NULL,
