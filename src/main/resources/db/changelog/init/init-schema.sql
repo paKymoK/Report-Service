@@ -1,15 +1,114 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+CREATE TABLE IF NOT EXISTS group_team
+(
+    id                 bigserial         NOT NULL,
+    group_name         character varying NOT NULL,
+    group_key          character varying NOT NULL,
+    calendar           bigint,
+    company_id         bigint,
+    end_break_time     character varying,
+    end_time           character varying,
+    group_icon         bigint,
+    is_active          boolean,
+    start_break_time   character varying,
+    start_time         character varying,
+    ticket_key_gen     integer,
+    days_of_week       character varying,
+    escalation_level_1 character varying,
+    escalation_level_2 character varying,
+    created_at         timestamp with time zone,
+    created_by         character varying,
+    modified_at        timestamp with time zone,
+    modified_by        character varying,
+    PRIMARY KEY (id)
+);
+
 CREATE TABLE IF NOT EXISTS priority
 (
+    id           bigserial         NOT NULL,
+    name         character varying,
+    priority_key character varying,
+    company_id   bigint,
+    icon_name    bigint,
+    is_active    boolean,
+    created_at   timestamp with time zone,
+    created_by   character varying,
+    modified_at  timestamp with time zone,
+    modified_by  character varying,
+    PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS application
+(
     id          bigserial         NOT NULL,
-    name        character varying NOT NULL,
+    app_key     character varying NOT NULL,
+    app_name    character varying NOT NULL,
+    assignee    character varying NOT NULL,
+    description character varying,
+    group_id    bigint,
+    icon        bigint,
+    is_active   boolean,
     created_at  timestamp with time zone,
     created_by  character varying,
     modified_at timestamp with time zone,
     modified_by character varying,
-    PRIMARY KEY (id),
-    UNIQUE (name)
+    PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS location
+(
+    id            bigserial         NOT NULL,
+    location_name character varying NOT NULL,
+    is_active     boolean,
+    company_id    bigint,
+    created_at    timestamp with time zone,
+    created_by    character varying,
+    modified_at   timestamp with time zone,
+    modified_by   character varying,
+    PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS statuses
+(
+    id          bigserial         NOT NULL,
+    status_name character varying NOT NULL,
+    color       character varying NOT NULL,
+    is_active   boolean,
+    created_at  timestamp with time zone,
+    created_by  character varying,
+    modified_at timestamp with time zone,
+    modified_by character varying,
+    PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS ticket_types
+(
+    id          bigserial         NOT NULL,
+    type_name   character varying NOT NULL,
+    type_key    character varying NOT NULL,
+    app_key     bigint,
+    icon_name   bigint,
+    is_active   boolean,
+    description character varying,
+    created_at  timestamp with time zone,
+    created_by  character varying,
+    modified_at timestamp with time zone,
+    modified_by character varying,
+    PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS departments
+(
+    id              bigserial         NOT NULL,
+    department_name character varying NOT NULL,
+    company_id      bigint,
+    is_active       boolean,
+    created_at      timestamp with time zone,
+    created_by      character varying,
+    modified_at     timestamp with time zone,
+    modified_by     character varying,
+    PRIMARY KEY (id)
 );
 
 CREATE TABLE IF NOT EXISTS sla

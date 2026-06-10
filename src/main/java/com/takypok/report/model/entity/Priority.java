@@ -12,4 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 @ToString
 public class Priority extends IdEntity {
   private String name;
+  private String priorityKey;
+  private Long companyId;
+  private Long iconName;
+  private Boolean isActive;
 }

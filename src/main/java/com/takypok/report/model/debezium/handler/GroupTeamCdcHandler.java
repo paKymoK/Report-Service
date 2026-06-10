@@ -52,6 +52,18 @@ public class GroupTeamCdcHandler implements CDCHandler<GroupTeamMySql, Project, 
         project.setId(mysqlModel.getId());
         project.setName(mysqlModel.getGroupName());
         project.setCode(mysqlModel.getGroupKey());
+        project.setCalendar(mysqlModel.getCalendar());
+        project.setCompanyId(mysqlModel.getCompanyId());
+        project.setEndBreakTime(mysqlModel.getEndBreakTime());
+        project.setEndTime(mysqlModel.getEndTime());
+        project.setGroupIcon(mysqlModel.getGroupIcon());
+        project.setIsActive(mysqlModel.getIsActive());
+        project.setStartBreakTime(mysqlModel.getStartBreakTime());
+        project.setStartTime(mysqlModel.getStartTime());
+        project.setTicketKeyGen(mysqlModel.getTicketKeyGen());
+        project.setDaysOfWeek(mysqlModel.getDaysOfWeek());
+        project.setEscalationLevel1(mysqlModel.getEscalationLevel1());
+        project.setEscalationLevel2(mysqlModel.getEscalationLevel2());
         return project;
     }
 

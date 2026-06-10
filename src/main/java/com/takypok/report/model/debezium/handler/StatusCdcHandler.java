@@ -5,10 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.takypok.report.model.core.Message;
 import com.takypok.report.model.debezium.CDCHandler;
-import com.takypok.report.model.debezium.source.PriorityMySql;
-import com.takypok.report.model.entity.Priority;
+import com.takypok.report.model.debezium.source.StatusMySql;
+import com.takypok.report.model.entity.Status;
 import com.takypok.report.model.exception.ApplicationException;
-import com.takypok.report.repository.PriorityRepository;
+import com.takypok.report.repository.StatusRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,9 +21,9 @@ import reactor.core.publisher.Mono;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class PriorityCdcHandler implements CDCHandler<PriorityMySql, Priority, Long> {
+public class StatusCdcHandler implements CDCHandler<StatusMySql, Status, Long> {
 
-    private final PriorityRepository repository;
+    private final StatusRepository repository;
     private final ObjectMapper mapper;
     private final R2dbcEntityTemplate template;
     private ObjectMapper snakeCaseMapper;
@@ -35,41 +35,39 @@ public class PriorityCdcHandler implements CDCHandler<PriorityMySql, Priority, L
     }
 
     @Override
-    public PriorityMySql deserialize(JsonNode node) {
+    public StatusMySql deserialize(JsonNode node) {
         try {
-            return snakeCaseMapper.treeToValue(node, PriorityMySql.class);
+            return snakeCaseMapper.treeToValue(node, StatusMySql.class);
         } catch (Exception e) {
-            log.error("[CDC] Failed to deserialize PriorityMySql from payload: {}", node, e);
-            throw new ApplicationException(Message.Application.ERROR, "Failed to deserialize PriorityMySql");
+            log.error("[CDC] Failed to deserialize StatusMySql from payload: {}", node, e);
+            throw new ApplicationException(Message.Application.ERROR, "Failed to deserialize StatusMySql");
         }
     }
 
     @Override
-    public Priority convert(PriorityMySql mysqlModel) {
-        if (mysqlModel == null) return null;
+    public Status convert(StatusMySql mysql) {
+        if (mysql == null) return null;
 
-        Priority priority = new Priority();
-        priority.setId(mysqlModel.getId());
-        priority.setName(mysqlModel.getName());
-        priority.setPriorityKey(mysqlModel.getPriorityKey());
-        priority.setCompanyId(mysqlModel.getCompanyId());
-        priority.setIconName(mysqlModel.getIconName());
-        priority.setIsActive(mysqlModel.getIsActive());
-        return priority;
+        Status status = new Status();
+        status.setId(mysql.getId());
+        status.setName(mysql.getStatusName());
+        status.setColor(mysql.getColor());
+        status.setIsActive(mysql.getIsActive());
+        return status;
     }
 
     @Override
-    public Long extractId(Priority entity) {
+    public Long extractId(Status entity) {
         return entity.getId();
     }
 
     @Override
-    public ReactiveCrudRepository<Priority, Long> repository() {
+    public ReactiveCrudRepository<Status, Long> repository() {
         return repository;
     }
 
     @Override
-    public Mono<Priority> upsert(Priority entity) {
+    public Mono<Status> upsert(Status entity) {
         return template.insert(entity)
                 .onErrorResume(DuplicateKeyException.class, e -> template.update(entity));
     }
