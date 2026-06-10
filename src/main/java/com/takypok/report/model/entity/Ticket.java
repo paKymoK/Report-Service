@@ -5,6 +5,8 @@ import com.takypok.report.model.core.authentication.User;
 import com.takypok.report.model.entity.custom.TicketDetail;
 import lombok.*;
 
+import java.time.ZonedDateTime;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -19,4 +21,6 @@ public class Ticket<T extends TicketDetail> extends IdEntity {
   private User reporter;
   private User assignee;
   private T detail;
+  private ZonedDateTime timeToInProgress;
+  private ZonedDateTime timeToClosed;
 }

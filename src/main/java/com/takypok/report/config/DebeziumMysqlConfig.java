@@ -2,13 +2,12 @@ package com.takypok.report.config;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.takypok.report.model.debezium.CDCHandler;
 import com.takypok.report.model.debezium.handler.GroupTeamCdcHandler;
 import com.takypok.report.model.debezium.handler.PriorityCdcHandler;
 import com.takypok.report.model.debezium.handler.SlaConfigurationCdcHandler;
+import com.takypok.report.model.debezium.handler.SlaTimeConfigurationCdcHandler;
 import com.takypok.report.model.debezium.handler.TicketCdcHandler;
-import com.takypok.report.model.debezium.source.TicketMySql;
 import io.debezium.engine.ChangeEvent;
 import io.debezium.engine.DebeziumEngine;
 import io.debezium.engine.format.JsonByteArray;
@@ -39,6 +38,7 @@ public class DebeziumMysqlConfig {
   private final GroupTeamCdcHandler groupTeamHandler;
   private final PriorityCdcHandler priorityHandler;
   private final SlaConfigurationCdcHandler slaConfigurationHandler;
+  private final SlaTimeConfigurationCdcHandler slaTimeConfigurationHandler;
 
   private Map<String, CDCHandler<?, ?, ?>> handlerMap;
 
@@ -74,10 +74,11 @@ public class DebeziumMysqlConfig {
   @PostConstruct
   private void init() {
     this.handlerMap = Map.of(
-//            prefix + ".ticketingdb_management.tickets",       ticketHandler,
-            prefix + ".ticketingdb_management.group_team",      groupTeamHandler,
-            prefix + ".ticketingdb_management.priority",        priorityHandler,
-            prefix + ".ticketingdb_management.sla_configuration", slaConfigurationHandler
+            prefix + ".ticketingdb_management.group_team",             groupTeamHandler,
+            prefix + ".ticketingdb_management.priority",               priorityHandler,
+            prefix + ".ticketingdb_management.sla_configuration",      slaConfigurationHandler,
+            prefix + ".ticketingdb_management.tickets",                ticketHandler,
+            prefix + ".ticketingdb_management.slas_time_configuration", slaTimeConfigurationHandler
     );
   }
 
@@ -100,7 +101,7 @@ public class DebeziumMysqlConfig {
     props.setProperty("database.server.id",             serverId);
     props.setProperty("database.include.list",          dbname);
     props.setProperty("table.include.list",
-            "ticketingdb_management.group_team,ticketingdb_management.priority,ticketingdb_management.sla_configuration,ticketingdb_management.tickets");
+            "ticketingdb_management.group_team,ticketingdb_management.priority,ticketingdb_management.sla_configuration,ticketingdb_management.slas_time_configuration,ticketingdb_management.tickets");
     props.setProperty("snapshot.mode",                  "initial");
     props.setProperty("heartbeat.interval.ms",          "30000");
     props.setProperty("schema.history.internal",

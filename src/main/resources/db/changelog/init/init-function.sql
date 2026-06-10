@@ -250,9 +250,9 @@ BEGIN
                               FROM ticket_data td),
          office_time_with_percent AS (SELECT *,
                                              LEAST(
-                                                     FLOOR(office_seconds::float / NULLIF(resolution_time * 3600, 0) * 100)::int,
+                                                     FLOOR(office_seconds::float / NULLIF(resolution_time * 3600, 0) * 100),
                                                      100
-                                             ) AS resolution_percent
+                                             )::int AS resolution_percent
                                       FROM office_time_data),
          update_response AS (
              UPDATE sla s

@@ -1,31 +1,46 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-CREATE TABLE IF NOT EXISTS status
-(
-    id          bigserial NOT NULL,
-    name        character varying,
-    "group"     character varying,
-    color       character varying,
-    created_at  timestamp with time zone,
-    created_by  character varying,
-    modified_at timestamp with time zone,
-    modified_by character varying,
-    PRIMARY KEY (id),
-    UNIQUE (name)
-);
-
 CREATE TABLE IF NOT EXISTS priority
 (
     id              bigserial         NOT NULL,
     name            character varying NOT NULL,
-    response_time   numeric(5,2)      NOT NULL,
-    resolution_time numeric(5,2)      NOT NULL,
+    response_time   integer           NOT NULL,
+    resolution_time integer           NOT NULL,
     created_at      timestamp with time zone,
     created_by      character varying,
     modified_at     timestamp with time zone,
     modified_by     character varying,
     PRIMARY KEY (id),
     UNIQUE (name)
+);
+
+CREATE TABLE IF NOT EXISTS project
+(
+    id          bigserial         NOT NULL,
+    name        character varying NOT NULL,
+    code        character varying NOT NULL,
+    workflow_id bigint            NOT NULL,
+    created_at  timestamp with time zone,
+    created_by  character varying,
+    modified_at timestamp with time zone,
+    modified_by character varying,
+    PRIMARY KEY (id),
+    UNIQUE (code)
+);
+
+CREATE TABLE IF NOT EXISTS issue_type
+(
+    id          bigserial         NOT NULL,
+    name        character varying NOT NULL,
+    code        character varying NOT NULL,
+    project_id  integer           NOT NULL,
+    created_at  timestamp with time zone,
+    created_by  character varying,
+    modified_at timestamp with time zone,
+    modified_by character varying,
+    PRIMARY KEY (id),
+    UNIQUE (name, project_id),
+    UNIQUE (code, project_id)
 );
 
 CREATE TABLE IF NOT EXISTS sla
@@ -47,62 +62,22 @@ CREATE TABLE IF NOT EXISTS sla
 
 CREATE TABLE IF NOT EXISTS ticket
 (
-    id          bigserial NOT NULL,
-    project     jsonb     NOT NULL,
-    issue_type  jsonb     NOT NULL,
-    status      jsonb     NOT NULL,
-    summary     character varying,
-    reporter    jsonb     NOT NULL,
-    assignee    jsonb,
-    detail      jsonb     NOT NULL,
-    priority    jsonb     NOT NULL,
-    created_at  timestamp with time zone,
-    created_by  character varying,
-    modified_at timestamp with time zone,
-    modified_by character varying,
+    id                   bigserial NOT NULL,
+    project              jsonb     NOT NULL,
+    issue_type           jsonb     NOT NULL,
+    status               jsonb     NOT NULL,
+    summary              character varying,
+    reporter             jsonb     NOT NULL,
+    assignee             jsonb,
+    detail               jsonb     NOT NULL,
+    priority             jsonb     NOT NULL,
+    time_to_in_progress  timestamptz,
+    time_to_closed       timestamptz,
+    created_at           timestamp with time zone,
+    created_by           character varying,
+    modified_at          timestamp with time zone,
+    modified_by          character varying,
     PRIMARY KEY (id)
-);
-
-CREATE TABLE IF NOT EXISTS workflow
-(
-    id          bigserial         NOT NULL,
-    name        character varying NOT NULL,
-    statuses    jsonb             NOT NULL,
-    transitions jsonb             NOT NULL,
-    created_at  timestamp with time zone,
-    created_by  character varying,
-    modified_at timestamp with time zone,
-    modified_by character varying,
-    PRIMARY KEY (id),
-    UNIQUE (name)
-);
-
-CREATE TABLE IF NOT EXISTS project
-(
-    id          bigserial         NOT NULL,
-    name        character varying NOT NULL,
-    code        character varying NOT NULL,
-    created_at  timestamp with time zone,
-    created_by  character varying,
-    modified_at timestamp with time zone,
-    modified_by character varying,
-    PRIMARY KEY (id),
-    UNIQUE (name, code)
-);
-
-CREATE TABLE IF NOT EXISTS issue_type
-(
-    id          bigserial         NOT NULL,
-    name        character varying NOT NULL,
-    code        character varying NOT NULL,
-    project_id  integer           NOT NULL,
-    created_at  timestamp with time zone,
-    created_by  character varying,
-    modified_at timestamp with time zone,
-    modified_by character varying,
-    PRIMARY KEY (id),
-    UNIQUE (name, project_id),
-    UNIQUE (code, project_id)
 );
 
 ALTER TABLE sla
@@ -156,59 +131,6 @@ CREATE OR REPLACE TRIGGER validate_paused_time
     ON sla
     FOR EACH ROW
 EXECUTE FUNCTION validate_paused_time();
-
-CREATE OR REPLACE FUNCTION prevent_issue_type_code_update()
-    RETURNS TRIGGER
-    LANGUAGE plpgsql
-AS
-$$
-BEGIN
-    IF OLD.code IS DISTINCT FROM NEW.code THEN
-        RAISE EXCEPTION 'Column code of issue_type is immutable and cannot be updated';
-    END IF;
-    RETURN NEW;
-END;
-$$;
-
-CREATE OR REPLACE TRIGGER prevent_issue_type_code_update
-    BEFORE UPDATE OF code
-    ON issue_type
-    FOR EACH ROW
-EXECUTE FUNCTION prevent_issue_type_code_update();
-
-CREATE OR REPLACE FUNCTION ticket_event_trigger()
-    RETURNS TRIGGER
-    LANGUAGE plpgsql
-AS
-$$
-BEGIN
-    IF (OLD.status ->> 'group' = 'TODO') AND (NEW.status ->> 'group' = 'PROCESSING') THEN
-        UPDATE sla
-        SET status = status || jsonb_build_object(
-                'response', 'DONE',
-                'responseTime', NOW()
-                               )
-        WHERE NEW.id = ticket_id;
-    END IF;
-
-    IF (OLD.status ->> 'group' = 'PROCESSING') AND (NEW.status ->> 'group' = 'DONE') THEN
-        UPDATE sla
-        SET status = status || jsonb_build_object(
-                'resolution', 'DONE',
-                'responseTime', NOW()
-                               )
-        WHERE NEW.id = ticket_id;
-    END IF;
-    RETURN NEW;
-END;
-$$;
-
-CREATE OR REPLACE TRIGGER ticket_event_trigger
-    AFTER UPDATE OF status
-    ON ticket
-    FOR EACH ROW
-    WHEN (OLD.status ->> 'group' IS DISTINCT FROM NEW.status ->> 'group')
-EXECUTE FUNCTION ticket_event_trigger();
 
 CREATE EXTENSION IF NOT EXISTS pg_cron;
 

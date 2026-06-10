@@ -3,12 +3,12 @@ package com.takypok.report.model.debezium.source;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.takypok.report.utils.Base64HtmlDeserializer;
 import com.takypok.report.utils.MicrosecondEpochDeserializer;
+import com.takypok.report.utils.MicrosecondEpochLocalDateDeserializer;
 import com.takypok.report.utils.MillisecondEpochDeserializer;
 import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Getter
 @Setter
@@ -46,6 +46,7 @@ public class TicketMySql {
 
     private String solution;
 
+    @JsonDeserialize(using = MicrosecondEpochLocalDateDeserializer.class)
     private LocalDate dueDate;
 
     private Long ticketTypeId;
@@ -91,7 +92,7 @@ public class TicketMySql {
 
     private Long pendingReasonCommentId;
 
-    private List<Long> pendingReasonAttachmentId;
+    private String pendingReasonAttachmentId;
 
     @JsonDeserialize(using = MicrosecondEpochDeserializer.class)
     private LocalDateTime createdTime;
