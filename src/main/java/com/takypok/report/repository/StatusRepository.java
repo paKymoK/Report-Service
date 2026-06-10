@@ -1,7 +1,7 @@
 package com.takypok.report.repository;
 
 import com.takypok.report.model.entity.Status;
-import org.springframework.data.repository.reactive.ReactiveCrudRepository;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
 
-public interface StatusRepository extends ReactiveCrudRepository<Status, Long> {
+public interface StatusRepository extends R2dbcRepository<Status, Long> {
 }

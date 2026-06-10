@@ -1,7 +1,7 @@
 package com.takypok.report.repository;
 
 import com.takypok.report.model.entity.Department;
-import org.springframework.data.repository.reactive.ReactiveCrudRepository;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
 
-public interface DepartmentRepository extends ReactiveCrudRepository<Department, Long> {
+public interface DepartmentRepository extends R2dbcRepository<Department, Long> {
 }

@@ -23,6 +23,7 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -124,9 +125,12 @@ public class SlaTimeConfigurationCdcHandler implements CDCHandler<SlaTimeConfigu
         return setting;
     }
 
+    private static final DateTimeFormatter TIME_FORMATTER =
+            DateTimeFormatter.ofPattern("H:mm");
+
     private LocalTime parseTime(String time) {
         if (time == null || time.isBlank()) return null;
-        return LocalTime.parse(time);
+        return LocalTime.parse(time, TIME_FORMATTER);
     }
 
     private List<Integer> parseWeekend(String workingDay) {
