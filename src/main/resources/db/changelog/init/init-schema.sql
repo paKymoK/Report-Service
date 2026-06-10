@@ -2,14 +2,12 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE IF NOT EXISTS priority
 (
-    id              bigserial         NOT NULL,
-    name            character varying NOT NULL,
-    response_time   integer           NOT NULL,
-    resolution_time integer           NOT NULL,
-    created_at      timestamp with time zone,
-    created_by      character varying,
-    modified_at     timestamp with time zone,
-    modified_by     character varying,
+    id          bigserial         NOT NULL,
+    name        character varying NOT NULL,
+    created_at  timestamp with time zone,
+    created_by  character varying,
+    modified_at timestamp with time zone,
+    modified_by character varying,
     PRIMARY KEY (id),
     UNIQUE (name)
 );
@@ -45,17 +43,18 @@ CREATE TABLE IF NOT EXISTS issue_type
 
 CREATE TABLE IF NOT EXISTS sla
 (
-    id          bigserial NOT NULL,
-    ticket_id   bigint    NOT NULL,
-    status      jsonb     NOT NULL,
-    is_paused   bool      NOT NULL,
-    paused_time jsonb     NOT NULL,
-    priority    jsonb     NOT NULL,
-    setting     jsonb     NOT NULL,
-    created_at  timestamp with time zone,
-    created_by  character varying,
-    modified_at timestamp with time zone,
-    modified_by character varying,
+    id              bigserial NOT NULL,
+    ticket_id       bigint    NOT NULL,
+    status          jsonb     NOT NULL,
+    is_paused       bool      NOT NULL,
+    paused_time     jsonb     NOT NULL,
+    response_time   numeric,
+    resolution_time numeric,
+    setting         jsonb     NOT NULL,
+    created_at      timestamp with time zone,
+    created_by      character varying,
+    modified_at     timestamp with time zone,
+    modified_by     character varying,
     PRIMARY KEY (id),
     UNIQUE (ticket_id)
 );
@@ -83,7 +82,8 @@ CREATE TABLE IF NOT EXISTS ticket
 ALTER TABLE sla
     REPLICA IDENTITY FULL;
 
-CREATE INDEX IF NOT EXISTS idx_ticket_status_group ON ticket ((status->>'group'));
+CREATE INDEX IF NOT EXISTS idx_ticket_time_to_closed ON ticket (time_to_closed);
+CREATE INDEX IF NOT EXISTS idx_ticket_time_to_in_progress ON ticket (time_to_in_progress);
 CREATE INDEX IF NOT EXISTS idx_ticket_issue_type ON ticket ((issue_type->>'name'));
 CREATE INDEX idx_tickets_detail_gin ON ticket USING GIN (detail);
 CREATE INDEX IF NOT EXISTS idx_ticket_status_id

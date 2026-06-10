@@ -88,7 +88,11 @@ public class TicketExportRepository {
                 t.project->>'name'     AS project_name,
                 t.issue_type->>'name'  AS issue_type_name,
                 t.status->>'name'      AS status_name,
-                t.status->>'group'     AS status_group,
+                CASE
+                    WHEN t.time_to_closed IS NOT NULL THEN 'DONE'
+                    WHEN t.time_to_in_progress IS NOT NULL THEN 'PROCESSING'
+                    ELSE 'TODO'
+                END                    AS status_group,
                 t.reporter->>'name'    AS reporter_name,
                 t.reporter->>'email'   AS reporter_email,
                 t.assignee->>'name'    AS assignee_name,

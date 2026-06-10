@@ -8,7 +8,6 @@ import com.takypok.report.model.core.authentication.User;
 import com.takypok.report.model.debezium.CDCHandler;
 import com.takypok.report.model.debezium.source.TicketMySql;
 import com.takypok.report.model.entity.*;
-import com.takypok.report.model.entity.custom.GroupStatus;
 import com.takypok.report.model.entity.custom.TicketDetail;
 import com.takypok.report.model.enums.StatusSla;
 import com.takypok.report.model.exception.ApplicationException;
@@ -150,14 +149,7 @@ public class TicketCdcHandler implements CDCHandler<TicketMySql, Ticket<TicketDe
     private Status buildStatus(TicketMySql mysql) {
         Status status = new Status();
         status.setId(mysql.getStatusId());
-        status.setGroup(inferGroup(mysql));
         return status;
-    }
-
-    private GroupStatus inferGroup(TicketMySql mysql) {
-        if (mysql.getTimeToClosed() != null) return GroupStatus.DONE;
-        if (mysql.getTimeToInProgress() != null) return GroupStatus.PROCESSING;
-        return GroupStatus.TODO;
     }
 
     private TicketDetail buildDetail(TicketMySql mysql) {

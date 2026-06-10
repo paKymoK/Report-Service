@@ -19,9 +19,10 @@ public interface TicketRepository<T extends TicketDetail> extends R2dbcRepositor
                               'id',         s.id,
                               'ticketId',   s.ticket_id,
                               'status',     s.status,
-                              'isPaused',   s.is_paused,
-                              'priority',   s.priority,
-                              'pausedTime', s.paused_time,
+                              'isPaused',       s.is_paused,
+                              'responseTime',   s.response_time,
+                              'resolutionTime', s.resolution_time,
+                              'pausedTime',     s.paused_time,
                               'setting',    s.setting
                             )
                           END AS sla
@@ -77,9 +78,10 @@ public interface TicketRepository<T extends TicketDetail> extends R2dbcRepositor
                               'id',         s.id,
                               'ticketId',   s.ticket_id,
                               'status',     s.status,
-                              'isPaused',   s.is_paused,
-                              'priority',   s.priority,
-                              'pausedTime', s.paused_time,
+                              'isPaused',       s.is_paused,
+                              'responseTime',   s.response_time,
+                              'resolutionTime', s.resolution_time,
+                              'pausedTime',     s.paused_time,
                               'setting',    s.setting
                             )
                           END AS sla
@@ -132,13 +134,17 @@ public interface TicketRepository<T extends TicketDetail> extends R2dbcRepositor
   @Query(
       """
                     SELECT
-                        status->>'group' AS name,
+                        CASE
+                            WHEN time_to_closed IS NOT NULL THEN 'DONE'
+                            WHEN time_to_in_progress IS NOT NULL THEN 'PROCESSING'
+                            ELSE 'TODO'
+                        END AS name,
                         COUNT(*) AS value
                     FROM ticket
                     WHERE
                         (:from::timestamptz IS NULL OR created_at >= :from::timestamptz)
                         AND (:to::timestamptz IS NULL OR created_at <= :to::timestamptz)
-                    GROUP BY status->>'group'
+                    GROUP BY 1
                     """)
   Flux<TicketByStatusStatistic> ticketByStatusStatistic(ZonedDateTime from, ZonedDateTime to);
 
@@ -146,9 +152,9 @@ public interface TicketRepository<T extends TicketDetail> extends R2dbcRepositor
       """
             SELECT
                           issue_type->>'name' AS name,
-                          COUNT(*) FILTER (WHERE status->>'group' = 'TODO')       AS "todo",
-                          COUNT(*) FILTER (WHERE status->>'group' = 'PROCESSING') AS "processing",
-                          COUNT(*) FILTER (WHERE status->>'group' = 'DONE')       AS "done"
+                          COUNT(*) FILTER (WHERE time_to_closed IS NULL AND time_to_in_progress IS NULL)     AS "todo",
+                          COUNT(*) FILTER (WHERE time_to_in_progress IS NOT NULL AND time_to_closed IS NULL) AS "processing",
+                          COUNT(*) FILTER (WHERE time_to_closed IS NOT NULL)                                 AS "done"
                       FROM ticket
                       WHERE
                           (:from::timestamptz IS NULL OR created_at >= :from::timestamptz)
@@ -176,9 +182,9 @@ public interface TicketRepository<T extends TicketDetail> extends R2dbcRepositor
                     SELECT
                         t.detail->>'application' AS application,
                         COUNT(*) AS total,
-                        COUNT(*) FILTER (WHERE t.status->>'group' = 'TODO')        AS open,
-                        COUNT(*) FILTER (WHERE t.status->>'group' = 'PROCESSING')  AS in_progress,
-                        COUNT(*) FILTER (WHERE t.status->>'group' = 'DONE')        AS done,
+                        COUNT(*) FILTER (WHERE t.time_to_closed IS NULL AND t.time_to_in_progress IS NULL)     AS open,
+                        COUNT(*) FILTER (WHERE t.time_to_in_progress IS NOT NULL AND t.time_to_closed IS NULL) AS in_progress,
+                        COUNT(*) FILTER (WHERE t.time_to_closed IS NOT NULL)                                   AS done,
                         COUNT(*) FILTER (WHERE
                             (s.status->>'isResponseOverdue')::boolean = true
                             OR (s.status->>'isResolutionOverdue')::boolean = true
@@ -212,7 +218,11 @@ public interface TicketRepository<T extends TicketDetail> extends R2dbcRepositor
                         SELECT
                             date_trunc('day', created_at AT TIME ZONE 'Asia/Ho_Chi_Minh') AT TIME ZONE 'Asia/Ho_Chi_Minh' AS date,
                             detail->>'application'                                             AS application,
-                            status->>'group'                                                   AS status_group,
+                            CASE
+                                WHEN time_to_closed IS NOT NULL THEN 'DONE'
+                                WHEN time_to_in_progress IS NOT NULL THEN 'PROCESSING'
+                                ELSE 'TODO'
+                            END                                                                AS status_group,
                             COUNT(*)                                                           AS daily_count
                         FROM ticket
                         WHERE detail->>'application' IS NOT NULL

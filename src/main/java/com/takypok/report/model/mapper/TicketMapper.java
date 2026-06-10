@@ -7,7 +7,6 @@ import com.takypok.report.model.core.Message;
 import com.takypok.report.model.core.authentication.User;
 import com.takypok.report.model.annotation.InternalApplicationAnnotation;
 import com.takypok.report.model.entity.*;
-import com.takypok.report.model.entity.custom.GroupStatus;
 import com.takypok.report.model.entity.custom.TicketDetail;
 import com.takypok.report.model.exception.ApplicationException;
 import com.takypok.report.model.request.CreateTicketRequest;

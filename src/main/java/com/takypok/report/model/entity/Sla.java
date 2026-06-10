@@ -14,6 +14,7 @@ public class Sla extends IdEntity {
   private SlaStatus status;
   private Boolean isPaused;
   private ListPausedTime pausedTime;
-  private Priority priority;
+  private Double responseTime;
+  private Double resolutionTime;
   private SlaSetting setting;
 }

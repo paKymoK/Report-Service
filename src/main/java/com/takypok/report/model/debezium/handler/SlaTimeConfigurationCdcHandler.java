@@ -6,7 +6,9 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.takypok.report.model.core.Message;
 import com.takypok.report.model.debezium.CDCHandler;
 import com.takypok.report.model.debezium.source.SlaTimeConfigurationMySql;
-import com.takypok.report.model.entity.*;
+import com.takypok.report.model.entity.Sla;
+import com.takypok.report.model.entity.SlaSetting;
+import com.takypok.report.model.entity.SlaStatus;
 import com.takypok.report.model.entity.custom.ListPausedTime;
 import com.takypok.report.model.enums.StatusSla;
 import com.takypok.report.model.exception.ApplicationException;
@@ -57,10 +59,6 @@ public class SlaTimeConfigurationCdcHandler implements CDCHandler<SlaTimeConfigu
 
     @Override
     public Sla convert(SlaTimeConfigurationMySql mysql) {
-        Priority priority = new Priority();
-        priority.setResponseTime(mysql.getTimeToFirstResponse());
-        priority.setResolutionTime(mysql.getTimeToFirstResolution());
-
         SlaStatus status = new SlaStatus();
         status.setResponse(StatusSla.TODO);
         status.setIsResponseOverdue(false);
@@ -73,7 +71,8 @@ public class SlaTimeConfigurationCdcHandler implements CDCHandler<SlaTimeConfigu
         sla.setStatus(status);
         sla.setIsPaused(false);
         sla.setPausedTime(new ListPausedTime());
-        sla.setPriority(priority);
+        sla.setResponseTime(mysql.getTimeToFirstResponse());
+        sla.setResolutionTime(mysql.getTimeToFirstResolution());
         sla.setSetting(buildSetting(mysql));
         return sla;
     }

@@ -220,8 +220,8 @@ BEGIN
                                 (s.setting ->> 'workEnd')::TIME                                 AS work_end,
                                 (s.setting ->> 'lunchStart')::TIME                              AS lunch_start,
                                 (s.setting ->> 'lunchEnd')::TIME                                AS lunch_end,
-                                (s.priority ->> 'responseTime')::NUMERIC                        AS response_time,
-                                (s.priority ->> 'resolutionTime')::NUMERIC                      AS resolution_time,
+                                s.response_time,
+                                s.resolution_time,
                                 json_to_tstzrange_array(s.paused_time)                          AS paused_ranges,
                                 ARRAY(SELECT jsonb_array_elements(s.setting -> 'weekend')::int) AS weekend_days
                          FROM ticket t
@@ -236,10 +236,7 @@ BEGIN
                                      AND COALESCE((s.status ->> 'resolutionPercent')::int, -1) < 100
                                  )
                              )
-                           AND NOW() - t.created_at > LEAST(
-                                                              (s.priority ->> 'responseTime')::numeric,
-                                                              (s.priority ->> 'resolutionTime')::numeric
-                                                      ) * interval '1 hour'),
+                           AND NOW() - t.created_at > LEAST(s.response_time, s.resolution_time) * interval '1 hour'),
          office_time_data AS (SELECT td.*,
                                      calculate_office_time(
                                              td.created_at, NOW(), 'Asia/Ho_Chi_Minh',

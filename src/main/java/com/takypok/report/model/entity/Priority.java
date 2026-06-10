@@ -12,6 +12,4 @@ import lombok.extern.slf4j.Slf4j;
 @ToString
 public class Priority extends IdEntity {
   private String name;
-  private Double responseTime;
-  private Double resolutionTime;
 }
